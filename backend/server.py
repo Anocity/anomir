@@ -143,8 +143,9 @@ class CraftResources(BaseModel):
 
 class AccountInfo(BaseModel):
     """Informações adicionais da conta"""
+    level: int = Field(default=0, ge=0)  # Level da conta
     power: int = Field(default=0, ge=0)
-    praca: Optional[str] = None  # 4F, 5F, 7F, 8F, 9F, 10F
+    praca: Optional[str] = None  # 4F, 5F, 6F, 7F, 8F, 9F, 10F
     praca_atq: Optional[str] = None
     pico: Optional[str] = None
     raid: Optional[str] = None
@@ -207,6 +208,7 @@ class BossPrices(BaseModel):
     xama_price: float = Field(default=0, ge=0)
     praca_4f_price: float = Field(default=0, ge=0)
     cracha_epica_price: float = Field(default=0, ge=0)
+    gold_price: float = Field(default=0, ge=0)  # Preço por unidade de gold
 
 class BossPricesUpdate(BaseModel):
     medio2_price: Optional[float] = Field(default=None, ge=0)
@@ -222,6 +224,7 @@ class BossPricesUpdate(BaseModel):
     xama_price: Optional[float] = Field(default=None, ge=0)
     praca_4f_price: Optional[float] = Field(default=None, ge=0)
     cracha_epica_price: Optional[float] = Field(default=None, ge=0)
+    gold_price: Optional[float] = Field(default=None, ge=0)
 
 # Helper functions
 def calculate_account_usd(account: dict, prices: BossPrices) -> float:
