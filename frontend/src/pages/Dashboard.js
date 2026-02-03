@@ -1,21 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Plus, Settings, FileText, DollarSign, Coins } from "lucide-react";
 import { Button } from "../components/ui/button";
 import EditableTable from "../components/EditableTable";
 import BossPriceDialog from "../components/BossPriceDialog";
+import ResourcesModal from "../components/ResourcesModal";
+import AccountInfoModal from "../components/AccountInfoModal";
 import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8001";
 const API = `${BACKEND_URL}/api`;
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [bossPrices, setBossPrices] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPriceDialog, setShowPriceDialog] = useState(false);
+  const [showResourcesModal, setShowResourcesModal] = useState(false);
+  const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -28,7 +30,6 @@ export default function Dashboard() {
         axios.get(`${API}/accounts`),
         axios.get(`${API}/boss-prices`)
       ]);
-      
       setAccounts(accountsRes.data);
       setBossPrices(pricesRes.data);
     } catch (error) {
@@ -39,7 +40,6 @@ export default function Dashboard() {
     }
   };
 
-  // Calcula totais (Boss + Gold) de todas as contas
   const totals = useMemo(() => {
     if (!bossPrices || accounts.length === 0) return { bossValue: 0, goldValue: 0, totalGold: 0 };
     
@@ -68,7 +68,6 @@ export default function Dashboard() {
     });
     
     const goldValue = totalGold * (bossPrices.gold_price || 0);
-    
     return { bossValue, goldValue, totalGold };
   }, [accounts, bossPrices]);
 
@@ -76,38 +75,18 @@ export default function Dashboard() {
     try {
       const newAccount = {
         name: "Nova Conta",
-        bosses: {
-          medio2: 0,
-          grande2: 0,
-          medio4: 0,
-          grande4: 0,
-          medio6: 0,
-          grande6: 0,
-          medio7: 0,
-          grande7: 0,
-          medio8: 0,
-          grande8: 0
-        },
+        bosses: { medio2: 0, grande2: 0, medio4: 0, grande4: 0, medio6: 0, grande6: 0, medio7: 0, grande7: 0, medio8: 0, grande8: 0 },
         sala_pico: "",
-        special_bosses: {
-          xama: 0,
-          praca_4f: 0,
-          cracha_epica: 0
-        },
+        special_bosses: { xama: 0, praca_4f: 0, cracha_epica: 0 },
         materials: {
-          anima: { raro: 0, epico: 0, lendario: 0 },
-          bugiganga: { raro: 0, epico: 0, lendario: 0 },
-          lunar: { raro: 0, epico: 0, lendario: 0 },
-          iluminado: { raro: 0, epico: 0, lendario: 0 },
-          quintessencia: { raro: 0, epico: 0, lendario: 0 },
-          esfera: { raro: 0, epico: 0, lendario: 0 },
-          platina: { raro: 0, epico: 0, lendario: 0 },
-          aco: { raro: 0, epico: 0, lendario: 0 }
+          anima: { raro: 0, epico: 0, lendario: 0 }, bugiganga: { raro: 0, epico: 0, lendario: 0 },
+          lunar: { raro: 0, epico: 0, lendario: 0 }, iluminado: { raro: 0, epico: 0, lendario: 0 },
+          quintessencia: { raro: 0, epico: 0, lendario: 0 }, esfera: { raro: 0, epico: 0, lendario: 0 },
+          platina: { raro: 0, epico: 0, lendario: 0 }, aco: { raro: 0, epico: 0, lendario: 0 }
         },
         craft_resources: { po: 0, ds: 0, cobre: 0 },
         gold: 0
       };
-      
       const response = await axios.post(`${API}/accounts`, newAccount);
       setAccounts([...accounts, response.data]);
       toast.success("Nova conta adicionada!");
@@ -122,6 +101,7 @@ export default function Dashboard() {
       await axios.put(`${API}/accounts/${accountId}`, { [field]: value });
       setAccounts(prev => prev.map(acc => {
         if (acc.id === accountId) {
+          if (typeof field === 'object') return { ...acc, ...field };
           if (field.includes('.')) {
             const [mainField, subField] = field.split('.');
             return { ...acc, [mainField]: { ...acc[mainField], [subField]: value } };
@@ -136,28 +116,21 @@ export default function Dashboard() {
     }
   };
 
-  const handleConfirmAccount = async (accountId) => {
-    try {
-      await axios.post(`${API}/accounts/${accountId}/confirm`);
-      toast.success("Contagem confirmada!");
-      setAccounts(prev => prev.map(acc => 
-        acc.id === accountId ? { ...acc, confirmed: true, confirmed_at: new Date().toISOString() } : acc
-      ));
-    } catch (error) {
-      console.error("Erro ao confirmar conta:", error);
-      toast.error("Erro ao confirmar conta");
-    }
+  const handleAccountUpdateLocal = (accountId, updates) => {
+    setAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, ...updates } : acc));
+  };
+
+  const handleAccountDelete = (accountId) => {
+    setAccounts(prev => prev.filter(acc => acc.id !== accountId));
   };
 
   const handleToggleConfirm = async (accountId, currentValue) => {
     try {
       const newValue = !currentValue;
       await axios.put(`${API}/accounts/${accountId}`, { confirmed: newValue });
-      setAccounts(prev => prev.map(acc => 
-        acc.id === accountId ? { ...acc, confirmed: newValue } : acc
-      ));
+      setAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, confirmed: newValue } : acc));
     } catch (error) {
-      console.error("Erro ao alternar confirmação:", error);
+      console.error("Erro:", error);
       toast.error("Erro ao alternar confirmação");
     }
   };
@@ -165,11 +138,11 @@ export default function Dashboard() {
   const handleSavePrices = async (priceData) => {
     try {
       await axios.put(`${API}/boss-prices`, priceData);
-      toast.success("Preços atualizados com sucesso!");
+      toast.success("Preços atualizados!");
       setShowPriceDialog(false);
       setBossPrices(priceData);
     } catch (error) {
-      console.error("Erro ao atualizar preços:", error);
+      console.error("Erro:", error);
       toast.error("Erro ao atualizar preços");
     }
   };
@@ -183,84 +156,45 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen py-4 px-3">
+    <div className="min-h-screen py-3 px-2">
       <div className="max-w-[1200px] mx-auto">
-        {/* Header */}
-        <div className="mb-4 bg-mir-charcoal/80 border border-white/5 rounded-lg p-4 shadow-xl">
+        {/* Header Compacto */}
+        <div className="mb-3 bg-mir-charcoal/80 border border-white/5 rounded-lg p-3 shadow-xl">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-secondary font-bold text-mir-gold tracking-wide uppercase" data-testid="dashboard-title">
-                MIR4 Manager
-              </h1>
-              <p className="text-slate-400 font-primary text-xs mt-1">
-                Gerencie suas contas e bosses
-              </p>
+              <h1 className="text-xl font-secondary font-bold text-mir-gold tracking-wide uppercase">MIR4 Manager</h1>
+              <p className="text-slate-500 text-[10px]">Gerencie suas contas</p>
             </div>
             
-            {/* Totais Card */}
-            <div className="flex gap-3 mr-4">
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-4 h-4 text-green-400" />
-                  <span className="text-[10px] text-green-400 uppercase">Boss Total</span>
-                </div>
-                <div className="text-lg font-bold text-green-400" data-testid="total-boss-value">
-                  ${totals.bossValue.toFixed(2)}
-                </div>
+            <div className="flex gap-2 items-center">
+              {/* Totais Compactos */}
+              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/30 rounded px-2 py-1.5">
+                <DollarSign className="w-3 h-3 text-green-400" />
+                <span className="text-xs text-green-400 font-medium">${totals.bossValue.toFixed(2)}</span>
               </div>
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-1.5">
-                  <Coins className="w-4 h-4 text-amber-400" />
-                  <span className="text-[10px] text-amber-400 uppercase">Gold Total</span>
-                </div>
-                <div className="text-lg font-bold text-amber-400" data-testid="total-gold-value">
-                  {totals.totalGold.toLocaleString('pt-BR')} <span className="text-xs font-normal">(${totals.goldValue.toFixed(2)})</span>
-                </div>
+              <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1.5">
+                <Coins className="w-3 h-3 text-amber-400" />
+                <span className="text-xs text-amber-400 font-medium">{totals.totalGold.toLocaleString('pt-BR')}</span>
               </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                onClick={handleAddAccount}
-                className="bg-mir-gold text-black font-bold uppercase tracking-wider hover:bg-amber-400 shadow-[0_0_10px_rgba(255,215,0,0.3)] transition-all text-sm px-3 py-2"
-                data-testid="add-account-btn"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Nova Conta
+
+              {/* Botões */}
+              <Button onClick={handleAddAccount} className="bg-mir-gold text-black font-bold text-xs px-2 py-1.5 h-auto" data-testid="add-account-btn">
+                <Plus className="w-3 h-3 mr-1" />Nova Conta
               </Button>
-              <Button
-                onClick={() => navigate("/accounts/info")}
-                variant="outline"
-                className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-500/50 text-sm px-3 py-2"
-                data-testid="accounts-info-btn"
-              >
-                <FileText className="w-4 h-4 mr-1" />
-                Info Contas
+              <Button onClick={() => setShowAccountInfoModal(true)} variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-xs px-2 py-1.5 h-auto" data-testid="accounts-info-btn">
+                <FileText className="w-3 h-3 mr-1" />Info
               </Button>
-              <Button
-                onClick={() => navigate("/account/" + (accounts[0]?.id || "") + "/resources")}
-                variant="outline"
-                className="bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 text-sm px-3 py-2"
-                data-testid="resources-btn"
-                disabled={accounts.length === 0}
-              >
-                <FileText className="w-4 h-4 mr-1" />
-                Recursos
+              <Button onClick={() => setShowResourcesModal(true)} variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-2 py-1.5 h-auto" data-testid="resources-btn">
+                <FileText className="w-3 h-3 mr-1" />Recursos
               </Button>
-              <Button
-                onClick={() => setShowPriceDialog(true)}
-                variant="outline"
-                className="bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/20 text-sm px-3 py-2"
-                data-testid="config-prices-btn"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Preços
+              <Button onClick={() => setShowPriceDialog(true)} variant="outline" className="bg-white/5 text-white border-white/10 text-xs px-2 py-1.5 h-auto" data-testid="config-prices-btn">
+                <Settings className="w-3 h-3 mr-1" />Preços
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Editable Table */}
+        {/* Tabela */}
         <div className="bg-mir-charcoal/50 border border-white/5 rounded-lg shadow-2xl overflow-hidden">
           <EditableTable
             accounts={accounts}
@@ -272,13 +206,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Price Dialog */}
-      <BossPriceDialog
-        open={showPriceDialog}
-        onOpenChange={setShowPriceDialog}
-        bossPrices={bossPrices}
-        onSave={handleSavePrices}
-      />
+      {/* Modais */}
+      <BossPriceDialog open={showPriceDialog} onOpenChange={setShowPriceDialog} bossPrices={bossPrices} onSave={handleSavePrices} />
+      <ResourcesModal open={showResourcesModal} onClose={() => setShowResourcesModal(false)} accounts={accounts} onAccountUpdate={handleAccountUpdateLocal} />
+      <AccountInfoModal open={showAccountInfoModal} onClose={() => setShowAccountInfoModal(false)} accounts={accounts} onAccountUpdate={handleAccountUpdateLocal} onAccountDelete={handleAccountDelete} />
     </div>
   );
 }

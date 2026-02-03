@@ -60,7 +60,7 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
           onChange={(e) => setTempValue(e.target.value)}
           onBlur={() => handleCellBlur(account.id, field)}
           onKeyDown={(e) => handleKeyDown(e, account.id, field)}
-          className="h-7 bg-mir-obsidian border-mir-gold/50 text-white font-mono text-xs px-2 no-spinner"
+          className="h-6 bg-mir-obsidian border-mir-gold/50 text-white font-mono text-[10px] px-1 no-spinner w-full"
           type={field === "name" || field === "sala_pico" ? "text" : "number"}
         />
       );
@@ -70,7 +70,7 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
       return (
         <div
           onClick={() => handleCellClick(account.id, field, value)}
-          className="cursor-pointer hover:bg-white/10 h-7 flex items-center px-2 rounded transition-colors text-white text-xs"
+          className="cursor-pointer hover:bg-white/10 h-6 flex items-center px-1 rounded transition-colors text-white text-[11px]"
           data-testid={`cell-${field}-${account.id}`}
         >
           {value || "-"}
@@ -84,7 +84,7 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
       return (
         <div
           onClick={() => handleCellClick(account.id, field, value)}
-          className={`cursor-pointer hover:bg-white/10 h-7 flex items-center justify-end px-2 rounded transition-colors ${textColor} text-xs`}
+          className={`cursor-pointer hover:bg-white/10 h-6 flex items-center justify-end px-1 rounded transition-colors ${textColor} text-[11px]`}
           data-testid={`cell-${field}-${account.id}`}
         >
           {goldValue > 0 ? goldValue.toLocaleString('pt-BR') : ""}
@@ -93,13 +93,13 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
     }
 
     const numValue = typeof value === 'number' ? value : 0;
-    const textColor = numValue > 0 ? "text-green-400" : "text-transparent";
-    const displayValue = numValue > 0 ? value : "";
+    const textColor = numValue > 0 ? "text-green-400" : "text-slate-600";
+    const displayValue = numValue > 0 ? value : "-";
 
     return (
       <div
         onClick={() => handleCellClick(account.id, field, value)}
-        className={`cursor-pointer hover:bg-white/10 h-7 flex items-center px-2 rounded transition-colors ${textColor} text-xs`}
+        className={`cursor-pointer hover:bg-white/10 h-6 flex items-center justify-center rounded transition-colors ${textColor} text-[10px] font-mono`}
         data-testid={`cell-${field}-${account.id}`}
       >
         {displayValue}
@@ -188,27 +188,27 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
           -moz-appearance: textfield;
         }
       `}</style>
-      <table className="w-full text-xs" data-testid="accounts-table">
+      <table className="w-full text-[10px]" data-testid="accounts-table">
         <thead className="bg-white/5 sticky top-0">
           <tr>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5">#</th>
-            <th className="py-2 px-3 text-left text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5">Nome</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">M2</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">G2</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">M4</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">G4</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">M6</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">G6</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">M7</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">G7</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">M8</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">G8</th>
-            <th className="py-2 px-3 text-left text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Sala</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Xama</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">Praça</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">Cracha</th>
-            <th className="py-2 px-3 text-right text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Gold</th>
-            <th className="py-2 px-3 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Conf</th>
+            <th className="py-1.5 px-1 text-center text-[9px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5 w-6">#</th>
+            <th className="py-1.5 px-2 text-left text-[9px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5 min-w-[80px]">Nome</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">M2</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">G2</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">M4</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">G4</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">M6</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">G6</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">M7</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">G7</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">M8</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-7">G8</th>
+            <th className="py-1.5 px-1 text-left text-[9px] uppercase text-slate-400 border-l border-white/5 w-14">Sala</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 border-l border-white/5 w-8">Xa</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-8">Pç</th>
+            <th className="py-1.5 px-0.5 text-center text-[9px] uppercase text-slate-400 w-8">Cr</th>
+            <th className="py-1.5 px-1 text-right text-[9px] uppercase text-slate-400 border-l border-white/5 w-16">Gold</th>
+            <th className="py-1.5 px-1 text-center text-[9px] uppercase text-slate-400 border-l border-white/5 w-8">Cf</th>
           </tr>
         </thead>
         <tbody>
@@ -218,61 +218,59 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onToggle
               className={`border-b border-white/5 hover:bg-white/5 transition-colors ${account.confirmed ? 'bg-green-900/10' : ''}`}
               data-testid={`account-row-${index}`}
             >
-              <td className="py-1 px-2 text-center font-mono text-slate-400 border-r border-white/5">
+              <td className="py-0.5 px-1 text-center font-mono text-slate-500 border-r border-white/5 text-[9px]">
                 {index + 1}
               </td>
-              <td className="py-1 px-3 font-primary text-white border-r border-white/5">
+              <td className="py-0.5 px-1 font-primary text-white border-r border-white/5">
                 {renderCell(account, "name", account.name)}
               </td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.medio2", account.bosses.medio2)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.grande2", account.bosses.grande2)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.medio4", account.bosses.medio4)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.grande4", account.bosses.grande4)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.medio6", account.bosses.medio6)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.grande6", account.bosses.grande6)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.medio7", account.bosses.medio7 || 0)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.grande7", account.bosses.grande7 || 0)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.medio8", account.bosses.medio8 || 0)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "bosses.grande8", account.bosses.grande8 || 0)}</td>
-              <td className="py-1 px-3 font-primary text-mir-gold border-l border-white/5">{renderCell(account, "sala_pico", account.sala_pico)}</td>
-              <td className="py-1 px-2 text-center font-mono border-l border-white/5">{renderCell(account, "special_bosses.xama", account.special_bosses.xama)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "special_bosses.praca_4f", account.special_bosses.praca_4f)}</td>
-              <td className="py-1 px-2 text-center font-mono">{renderCell(account, "special_bosses.cracha_epica", account.special_bosses.cracha_epica)}</td>
-              <td className="py-1 px-3 font-mono border-l border-white/5">{renderCell(account, "gold", account.gold)}</td>
-              <td className="py-1 px-3 text-center border-l border-white/5">
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.medio2", account.bosses.medio2)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.grande2", account.bosses.grande2)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.medio4", account.bosses.medio4)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.grande4", account.bosses.grande4)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.medio6", account.bosses.medio6)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.grande6", account.bosses.grande6)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.medio7", account.bosses.medio7 || 0)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.grande7", account.bosses.grande7 || 0)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.medio8", account.bosses.medio8 || 0)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "bosses.grande8", account.bosses.grande8 || 0)}</td>
+              <td className="py-0.5 px-1 font-primary text-mir-gold border-l border-white/5 text-[10px]">{renderCell(account, "sala_pico", account.sala_pico)}</td>
+              <td className="py-0.5 px-0.5 border-l border-white/5">{renderCell(account, "special_bosses.xama", account.special_bosses.xama)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "special_bosses.praca_4f", account.special_bosses.praca_4f)}</td>
+              <td className="py-0.5 px-0.5">{renderCell(account, "special_bosses.cracha_epica", account.special_bosses.cracha_epica)}</td>
+              <td className="py-0.5 px-1 border-l border-white/5">{renderCell(account, "gold", account.gold)}</td>
+              <td className="py-0.5 px-1 text-center border-l border-white/5">
                 <button
                   onClick={() => onToggleConfirm(account.id, account.confirmed)}
-                  className={`h-7 w-7 p-0 flex items-center justify-center rounded transition-colors ${account.confirmed ? 'text-green-500 hover:text-green-400' : 'text-slate-400 hover:text-green-500'} hover:bg-white/5`}
+                  className={`h-5 w-5 p-0 flex items-center justify-center rounded transition-colors ${account.confirmed ? 'text-green-500' : 'text-slate-500 hover:text-green-500'}`}
                   data-testid={`confirm-account-btn-${index}`}
-                  title={account.confirmed ? "Desativar confirmação" : "Ativar confirmação"}
                 >
-                  {account.confirmed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                  {account.confirmed ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
                 </button>
               </td>
             </tr>
           ))}
           
           {totals && (
-            <tr className="bg-mir-gold/10 border-t-2 border-mir-gold/50 font-bold">
-              <td className="py-2 px-2 border-r border-white/5"></td>
-              <td className="py-2 px-3 text-left text-xs uppercase text-mir-gold border-r border-white/5">Total</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.medio2}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.grande2}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.medio4}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.grande4}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.medio6}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.grande6}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.medio7}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.grande7}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.medio8}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.grande8}</td>
-              <td className="py-2 px-3 border-l border-white/5"></td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white border-l border-white/5">{totals.xama}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.praca_4f}</td>
-              <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.cracha_epica}</td>
-              <td className="py-2 px-3 text-right font-mono text-xs text-mir-blue border-l border-white/5">{totals.gold.toLocaleString('pt-BR')}</td>
-              <td className="py-2 px-3 border-l border-white/5"></td>
-              <td className="py-2 px-3 border-l border-white/5"></td>
+            <tr className="bg-mir-gold/10 border-t border-mir-gold/50 font-bold">
+              <td className="py-1 px-1 border-r border-white/5"></td>
+              <td className="py-1 px-1 text-left text-[9px] uppercase text-mir-gold border-r border-white/5">Total</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.medio2}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.grande2}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.medio4}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.grande4}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.medio6}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.grande6}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.medio7}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.grande7}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.medio8}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.grande8}</td>
+              <td className="py-1 px-1 border-l border-white/5"></td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white border-l border-white/5">{totals.xama}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.praca_4f}</td>
+              <td className="py-1 px-0.5 text-center font-mono text-[9px] text-white">{totals.cracha_epica}</td>
+              <td className="py-1 px-1 text-right font-mono text-[9px] text-mir-blue border-l border-white/5">{totals.gold.toLocaleString('pt-BR')}</td>
+              <td className="py-1 px-1 border-l border-white/5"></td>
             </tr>
           )}
           
