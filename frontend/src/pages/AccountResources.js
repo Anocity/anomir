@@ -27,7 +27,7 @@ const CRAFT_ITEMS = [
   { key: "escama", name: "Escama", materials: ["aco", "esfera", "lunar"] },
   { key: "couro", name: "Couro", materials: ["aco", "quintessencia", "bugiganga"] },
   { key: "chifre", name: "Chifre", materials: ["platina", "iluminado", "anima"] },
-  { key: "olho", name: "Olho", materials: null }, // Sem filtro
+  { key: "olho", name: "Olho", materials: ["platina", "iluminado", "anima"] }, // Mesmas regras do Chifre
   { key: "esfera_item", name: "Esfera", materials: null } // Sem filtro, apenas anotação
 ];
 
