@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Trophy, Sword, Shield, Gem, ChevronDown } from "lucide-react";
+import { ArrowLeft, Trophy, Sword, Shield, Gem } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
@@ -230,7 +230,7 @@ export default function AccountResources() {
   const [loading, setLoading] = useState(true);
   const [localMaterials, setLocalMaterials] = useState({});
   const [localCraftResources, setLocalCraftResources] = useState({ po: 0, ds: 0, cobre: 0 });
-  const [craftItem, setCraftItem] = useState(null);
+  const [craftItems, setCraftItems] = useState([]);
 
   const fetchAccount = useCallback(async () => {
     try {
@@ -248,8 +248,8 @@ export default function AccountResources() {
       // Inicializa recursos de craft
       setLocalCraftResources(response.data.craft_resources || { po: 0, ds: 0, cobre: 0 });
       
-      // Carrega item de criação salvo
-      setCraftItem(response.data.craft_item || null);
+      // Carrega itens de criação salvos (multi-select)
+      setCraftItems(response.data.craft_items || []);
     } catch (error) {
       console.error("Erro ao carregar conta:", error);
       toast.error("Erro ao carregar dados da conta");
@@ -276,13 +276,17 @@ export default function AccountResources() {
     setLocalCraftResources(prev => ({ ...prev, [key]: numValue }));
   };
 
-  const handleCraftItemChange = async (value) => {
-    setCraftItem(value);
+  const handleCraftItemToggle = async (itemKey) => {
+    const newItems = craftItems.includes(itemKey)
+      ? craftItems.filter(k => k !== itemKey)
+      : [...craftItems, itemKey];
+    
+    setCraftItems(newItems);
     // Salva imediatamente no banco
     try {
-      await axios.put(`${API}/accounts/${accountId}`, { craft_item: value });
+      await axios.put(`${API}/accounts/${accountId}`, { craft_items: newItems });
     } catch (error) {
-      console.error("Erro ao salvar item:", error);
+      console.error("Erro ao salvar itens:", error);
     }
   };
 
@@ -319,13 +323,24 @@ export default function AccountResources() {
     };
   }, [localMaterials, localCraftResources]);
 
-  // Filtra materiais com base no item de criação selecionado
+  // Filtra materiais com base nos itens de criação selecionados (multi-select)
   const filteredMaterials = useMemo(() => {
-    if (!craftItem) return MATERIALS;
-    const selectedItem = CRAFT_ITEMS.find(item => item.key === craftItem);
-    if (!selectedItem || !selectedItem.materials) return MATERIALS;
-    return MATERIALS.filter(mat => selectedItem.materials.includes(mat.key));
-  }, [craftItem]);
+    if (craftItems.length === 0) return [];
+    
+    // Coleta todos os materiais únicos dos itens selecionados
+    const materialKeys = new Set();
+    craftItems.forEach(itemKey => {
+      const item = CRAFT_ITEMS.find(i => i.key === itemKey);
+      if (item && item.materials) {
+        item.materials.forEach(mat => materialKeys.add(mat));
+      }
+    });
+    
+    // Se nenhum item tem materiais definidos, retorna vazio
+    if (materialKeys.size === 0) return [];
+    
+    return MATERIALS.filter(mat => materialKeys.has(mat.key));
+  }, [craftItems]);
 
   // Calcula objetivos usando useMemo para performance
   const objectiveResults = useMemo(() => {
@@ -388,24 +403,31 @@ export default function AccountResources() {
                 </p>
               </div>
             </div>
-            
-            {/* Select Item de Criação */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Item:</span>
-              <div className="relative">
-                <select
-                  value={craftItem || ""}
-                  onChange={(e) => handleCraftItemChange(e.target.value || null)}
-                  className="appearance-none bg-mir-obsidian border border-white/20 rounded px-3 py-1.5 pr-8 text-xs text-white focus:outline-none focus:border-mir-gold cursor-pointer min-w-[120px]"
-                  data-testid="craft-item-select"
+          </div>
+          
+          {/* Multi-Select Itens de Criação */}
+          <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-400 mr-1">Itens que a conta possui:</span>
+              {CRAFT_ITEMS.map(item => (
+                <label 
+                  key={item.key} 
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-all text-xs ${
+                    craftItems.includes(item.key)
+                      ? 'bg-mir-gold/20 border border-mir-gold/50 text-mir-gold'
+                      : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
+                  }`}
+                  data-testid={`craft-item-${item.key}`}
                 >
-                  <option value="">Todos</option>
-                  {CRAFT_ITEMS.map(item => (
-                    <option key={item.key} value={item.key}>{item.name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
-              </div>
+                  <input
+                    type="checkbox"
+                    checked={craftItems.includes(item.key)}
+                    onChange={() => handleCraftItemToggle(item.key)}
+                    className="w-3 h-3 rounded accent-amber-500"
+                  />
+                  {item.name}
+                </label>
+              ))}
             </div>
           </div>
         </div>
@@ -417,46 +439,59 @@ export default function AccountResources() {
               <h2 className="text-sm font-secondary font-bold text-white" data-testid="materials-title">
                 Materiais por Raridade
               </h2>
-              {craftItem && (
+              {craftItems.length > 0 && (
                 <span className="text-[10px] text-mir-gold bg-mir-gold/10 px-2 py-0.5 rounded">
-                  Filtro: {CRAFT_ITEMS.find(i => i.key === craftItem)?.name}
+                  {craftItems.length} item(ns) selecionado(s)
                 </span>
               )}
             </div>
             
-            {/* Header da tabela */}
-            <div className="grid grid-cols-4 gap-1 mb-2 text-[10px] text-slate-500 uppercase">
-              <div>Material</div>
-              <div className="text-center text-blue-400">Raro</div>
-              <div className="text-center text-purple-400">Épico</div>
-              <div className="text-center text-amber-400">Lendário</div>
-            </div>
-            
-            {/* Linhas de materiais */}
-            <div className="space-y-1">
-              {filteredMaterials.map(mat => (
-                <div key={mat.key} className="grid grid-cols-4 gap-1 items-center">
-                  <div className="text-xs text-slate-300 truncate" title={mat.name}>
-                    {mat.name}
-                  </div>
-                  {["raro", "epico", "lendario"].map(tier => (
-                    <Input
-                      key={tier}
-                      type="number"
-                      value={localMaterials[mat.key]?.[tier] || 0}
-                      onChange={(e) => handleMaterialChange(mat.key, tier, e.target.value)}
-                      className={`h-7 text-xs text-center bg-mir-obsidian border-white/10 ${
-                        tier === "raro" ? "text-blue-400" : 
-                        tier === "epico" ? "text-purple-400" : "text-amber-400"
-                      }`}
-                      data-testid={`material-${mat.key}-${tier}`}
-                    />
+            {craftItems.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">
+                Selecione os itens de criação que a conta possui acima
+              </div>
+            ) : filteredMaterials.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">
+                Os itens selecionados não possuem recursos associados
+              </div>
+            ) : (
+              <>
+                {/* Header da tabela */}
+                <div className="grid grid-cols-4 gap-1 mb-2 text-[10px] text-slate-500 uppercase">
+                  <div>Material</div>
+                  <div className="text-center text-blue-400">Raro</div>
+                  <div className="text-center text-purple-400">Épico</div>
+                  <div className="text-center text-amber-400">Lendário</div>
+                </div>
+                
+                {/* Linhas de materiais */}
+                <div className="space-y-1">
+                  {filteredMaterials.map(mat => (
+                    <div key={mat.key} className="grid grid-cols-4 gap-1 items-center">
+                      <div className="text-xs text-slate-300 truncate" title={mat.name}>
+                        {mat.name}
+                      </div>
+                      {["raro", "epico", "lendario"].map(tier => (
+                        <Input
+                          key={tier}
+                          type="number"
+                          value={localMaterials[mat.key]?.[tier] || 0}
+                          onChange={(e) => handleMaterialChange(mat.key, tier, e.target.value)}
+                          className={`h-7 text-xs text-center bg-mir-obsidian border-white/10 ${
+                            tier === "raro" ? "text-blue-400" : 
+                            tier === "epico" ? "text-purple-400" : "text-amber-400"
+                          }`}
+                          data-testid={`material-${mat.key}-${tier}`}
+                        />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
 
-            {/* Recursos de Craft */}
+            {/* Recursos de Craft - sempre visível se há itens selecionados */}
+            {craftItems.length > 0 && (
             <div className="mt-4 pt-3 border-t border-white/10">
               <h3 className="text-xs font-secondary font-bold text-white mb-2">Recursos de Craft</h3>
               <div className="grid grid-cols-3 gap-3">
@@ -478,14 +513,17 @@ export default function AccountResources() {
                 ))}
               </div>
             </div>
+            )}
 
             {/* Legenda de Craft */}
+            {craftItems.length > 0 && (
             <div className="mt-3 pt-2 border-t border-white/10 text-[9px] text-slate-500">
               <div className="flex gap-4">
                 <span>1 Épico = 10R + 25 Pó + 5k DS + 20k Cu</span>
                 <span>1 Lendário = 10E + 125 Pó + 25k DS + 100k Cu</span>
               </div>
             </div>
+            )}
           </div>
 
           {/* Coluna 2: Objetivos Lendários */}
