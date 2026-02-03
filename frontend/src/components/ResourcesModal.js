@@ -68,14 +68,12 @@ const FINAL_ITEMS = {
 };
 
 // Custos de craft
-// Para criar 1 Épico: 10 Raros + 25 Pó + 20.000 Cobre + 5.000 DS
-// Para criar 1 Lendário: 10 Épicos + 125 Pó + 100.000 Cobre + 25.000 DS
 const CRAFT_COSTS = {
   epico: { raro: 10, po: 25, cobre: 20000, ds: 5000 },
   lendario: { epico: 10, po: 125, cobre: 100000, ds: 25000 }
 };
 
-// Calcula o que falta para um item final, considerando a cadeia Raro → Épico → Lendário
+// Calcula o que falta para um item final
 function calculateMissing(itemKey, materials, craftResources) {
   const item = FINAL_ITEMS[itemKey];
   if (!item || !item.recipe) return null;
@@ -90,7 +88,6 @@ function calculateMissing(itemKey, materials, craftResources) {
     const needed = ingredient.qty;
     const have = mat.lendario || 0;
     
-    // Quanto lendário falta
     const lendFalta = Math.max(0, needed - have);
     
     if (lendFalta === 0) {
@@ -105,17 +102,14 @@ function calculateMissing(itemKey, materials, craftResources) {
       continue;
     }
 
-    // Quanto épico precisa para fazer os lendários faltantes
     const epicoNecessarioTotal = lendFalta * CRAFT_COSTS.lendario.epico;
     const epicoDisponivel = mat.epico || 0;
     const epicoFalta = Math.max(0, epicoNecessarioTotal - epicoDisponivel);
 
-    // Quanto raro precisa para fazer os épicos faltantes
     const raroNecessarioTotal = epicoFalta * CRAFT_COSTS.epico.raro;
     const raroDisponivel = mat.raro || 0;
     const raroFalta = Math.max(0, raroNecessarioTotal - raroDisponivel);
 
-    // Recursos necessários para épicos (só dos que precisam ser craftados)
     const epicosACraftar = epicoFalta;
     if (epicosACraftar > 0) {
       totalPoNeeded += epicosACraftar * CRAFT_COSTS.epico.po;
@@ -123,7 +117,6 @@ function calculateMissing(itemKey, materials, craftResources) {
       totalCobreNeeded += epicosACraftar * CRAFT_COSTS.epico.cobre;
     }
 
-    // Recursos necessários para lendários
     totalPoNeeded += lendFalta * CRAFT_COSTS.lendario.po;
     totalDsNeeded += lendFalta * CRAFT_COSTS.lendario.ds;
     totalCobreNeeded += lendFalta * CRAFT_COSTS.lendario.cobre;
@@ -138,7 +131,6 @@ function calculateMissing(itemKey, materials, craftResources) {
     });
   }
 
-  // Calcula recursos faltantes
   const poAtual = craftResources.po || 0;
   const dsAtual = craftResources.ds || 0;
   const cobreAtual = craftResources.cobre || 0;
@@ -162,31 +154,38 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
   const [localMaterials, setLocalMaterials] = useState({});
   const [localCraftResources, setLocalCraftResources] = useState({ po: 0, ds: 0, cobre: 0 });
   const [craftItems, setCraftItems] = useState([]);
+  const [isDirty, setIsDirty] = useState(false);
   const saveTimeoutRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
-  const selectedAccount = useMemo(() => 
-    accounts.find(a => a.id === selectedAccountId), 
-    [accounts, selectedAccountId]
-  );
-
+  // Seleciona primeira conta quando modal abre
   useEffect(() => {
     if (open && accounts.length > 0 && !selectedAccountId) {
       setSelectedAccountId(accounts[0].id);
     }
+    if (!open) {
+      isInitializedRef.current = false;
+    }
   }, [open, accounts, selectedAccountId]);
 
+  // Carrega dados da conta selecionada (apenas uma vez ou quando muda conta)
   useEffect(() => {
-    if (selectedAccount) {
-      const mats = selectedAccount.materials || {};
-      const initialMats = {};
-      MATERIALS.forEach(m => {
-        initialMats[m.key] = mats[m.key] || { raro: 0, epico: 0, lendario: 0 };
-      });
-      setLocalMaterials(initialMats);
-      setLocalCraftResources(selectedAccount.craft_resources || { po: 0, ds: 0, cobre: 0 });
-      setCraftItems(selectedAccount.craft_items || []);
-    }
-  }, [selectedAccount]);
+    if (!selectedAccountId || !accounts.length) return;
+    
+    const account = accounts.find(a => a.id === selectedAccountId);
+    if (!account) return;
+
+    const mats = account.materials || {};
+    const initialMats = {};
+    MATERIALS.forEach(m => {
+      initialMats[m.key] = mats[m.key] || { raro: 0, epico: 0, lendario: 0 };
+    });
+    setLocalMaterials(initialMats);
+    setLocalCraftResources(account.craft_resources || { po: 0, ds: 0, cobre: 0 });
+    setCraftItems(account.craft_items || []);
+    setIsDirty(false);
+    isInitializedRef.current = true;
+  }, [selectedAccountId]); // Removido accounts das dependências para evitar re-inicialização
 
   const handleMaterialChange = (matKey, tier, value) => {
     const numValue = Math.max(0, parseInt(value) || 0);
@@ -194,11 +193,13 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
       ...prev,
       [matKey]: { ...prev[matKey], [tier]: numValue }
     }));
+    setIsDirty(true);
   };
 
   const handleCraftResourceChange = (key, value) => {
     const numValue = Math.max(0, parseInt(value) || 0);
     setLocalCraftResources(prev => ({ ...prev, [key]: numValue }));
+    setIsDirty(true);
   };
 
   const handleCraftItemToggle = async (itemKey) => {
@@ -210,33 +211,53 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
     if (selectedAccountId) {
       try {
         await axios.put(`${API}/accounts/${selectedAccountId}`, { craft_items: newItems });
-        onAccountUpdate(selectedAccountId, { craft_items: newItems });
+        // Não chama onAccountUpdate para evitar re-render
       } catch (error) {
         console.error("Erro ao salvar:", error);
       }
     }
   };
 
-  const saveData = useCallback(async () => {
-    if (!selectedAccountId) return;
-    try {
-      await axios.put(`${API}/accounts/${selectedAccountId}`, {
-        materials: localMaterials,
-        craft_resources: localCraftResources
-      });
-      onAccountUpdate(selectedAccountId, { materials: localMaterials, craft_resources: localCraftResources });
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar dados");
-    }
-  }, [selectedAccountId, localMaterials, localCraftResources, onAccountUpdate]);
-
+  // Auto-save com debounce - só salva no backend, não atualiza o pai
   useEffect(() => {
-    if (!selectedAccount) return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(saveData, 500);
-    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [localMaterials, localCraftResources, saveData, selectedAccount]);
+    if (!isDirty || !selectedAccountId || !isInitializedRef.current) return;
+    
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await axios.put(`${API}/accounts/${selectedAccountId}`, {
+          materials: localMaterials,
+          craft_resources: localCraftResources
+        });
+        // Não chama onAccountUpdate durante edição para evitar re-render
+        setIsDirty(false);
+      } catch (error) {
+        console.error("Erro ao salvar:", error);
+        toast.error("Erro ao salvar dados");
+      }
+    }, 800); // Aumentado para 800ms
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [localMaterials, localCraftResources, isDirty, selectedAccountId]);
+
+  // Atualiza o pai apenas quando fecha o modal
+  const handleClose = useCallback(() => {
+    if (selectedAccountId && isInitializedRef.current) {
+      onAccountUpdate(selectedAccountId, { 
+        materials: localMaterials, 
+        craft_resources: localCraftResources,
+        craft_items: craftItems
+      });
+    }
+    onClose();
+  }, [selectedAccountId, localMaterials, localCraftResources, craftItems, onAccountUpdate, onClose]);
 
   // Filtra materiais com base nos itens selecionados
   const filteredMaterials = useMemo(() => {
@@ -269,7 +290,7 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/80" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/80" onClick={handleClose} />
       <div className="relative bg-mir-charcoal border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden" data-testid="resources-modal">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -289,7 +310,7 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1" data-testid="close-modal-btn">
+          <button onClick={handleClose} className="text-slate-400 hover:text-white p-1" data-testid="close-modal-btn">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -354,7 +375,7 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
                           <div className="text-xs text-slate-300">{mat.name}</div>
                           {["raro", "epico", "lendario"].map(tier => (
                             <Input
-                              key={tier}
+                              key={`${mat.key}-${tier}`}
                               type="number"
                               value={localMaterials[mat.key]?.[tier] || 0}
                               onChange={(e) => handleMaterialChange(mat.key, tier, e.target.value)}
@@ -423,11 +444,6 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
 
                     if (!calc) return null;
 
-                    const hasAllMaterials = calc.ingredients.every(ing => ing.missing === 0);
-                    const hasAllResources = calc.resources.po.missing === 0 && 
-                                           calc.resources.ds.missing === 0 && 
-                                           calc.resources.cobre.missing === 0;
-
                     return (
                       <div key={itemKey} className={`p-3 rounded-lg border ${
                         calc.isComplete 
@@ -462,7 +478,7 @@ export default function ResourcesModal({ open, onClose, accounts, onAccountUpdat
                         </div>
 
                         {/* Recursos Faltando */}
-                        {!hasAllMaterials && (
+                        {!calc.isComplete && (
                           <div className="pt-2 border-t border-white/5">
                             <div className="text-[10px] text-slate-500 uppercase mb-1">Recursos para Craft</div>
                             <div className="grid grid-cols-3 gap-2 text-xs">
