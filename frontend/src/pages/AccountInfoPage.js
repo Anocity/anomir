@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, Info, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
@@ -9,8 +9,8 @@ import { toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8001";
 const API = `${BACKEND_URL}/api`;
 
-// Opções dos selects
-const FLOOR_OPTIONS = ["4F", "5F", "7F", "8F", "9F", "10F"];
+// Opções dos selects (com 6F adicionado)
+const FLOOR_OPTIONS = ["4F", "5F", "6F", "7F", "8F", "9F", "10F"];
 
 const RAID_OPTIONS = [
   "Mina Demoníaca",
@@ -39,19 +39,17 @@ const RAID_BOSS_OPTIONS = [
   "Sagitário"
 ];
 
-// Formatar power (100000 → 100k)
-const formatPower = (value) => {
-  if (!value || value < 1000) return value?.toString() || "0";
-  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-  if (value >= 100000) return `${Math.round(value / 1000)}k`;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-  return value.toString();
+// Formatar número com pontuação para milhar (100000 → 100.000)
+const formatNumber = (value) => {
+  if (!value || value === 0) return "0";
+  return value.toLocaleString('pt-BR');
 };
 
 export default function AccountInfoPage() {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const saveTimeoutRefs = useRef({});
 
   useEffect(() => {
@@ -71,7 +69,6 @@ export default function AccountInfoPage() {
   };
 
   const updateAccountInfo = (accountId, field, value) => {
-    // Atualiza estado local imediatamente
     setAccounts(prev => prev.map(acc => {
       if (acc.id === accountId) {
         const currentInfo = acc.account_info || {};
@@ -83,7 +80,6 @@ export default function AccountInfoPage() {
       return acc;
     }));
 
-    // Debounce save
     if (saveTimeoutRefs.current[accountId]) {
       clearTimeout(saveTimeoutRefs.current[accountId]);
     }
@@ -100,6 +96,18 @@ export default function AccountInfoPage() {
         toast.error("Erro ao salvar");
       }
     }, 500);
+  };
+
+  const handleDeleteAccount = async (accountId) => {
+    try {
+      await axios.delete(`${API}/accounts/${accountId}`);
+      setAccounts(prev => prev.filter(acc => acc.id !== accountId));
+      setDeleteConfirm(null);
+      toast.success("Conta deletada com sucesso");
+    } catch (error) {
+      console.error("Erro ao deletar:", error);
+      toast.error("Erro ao deletar conta");
+    }
   };
 
   if (loading) {
@@ -129,7 +137,7 @@ export default function AccountInfoPage() {
                 Informações das Contas
               </h1>
               <p className="text-slate-400 font-primary text-[10px]">
-                Power, Praça, Pico, Raid e Raid Boss
+                Level, Power, Praça, Pico, Raid e Raid Boss
               </p>
             </div>
           </div>
@@ -140,26 +148,32 @@ export default function AccountInfoPage() {
           <table className="w-full text-xs" data-testid="accounts-info-table">
             <thead className="bg-white/5 sticky top-0">
               <tr>
-                <th className="py-2 px-3 text-left text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5 min-w-[120px]">
+                <th className="py-2 px-3 text-left text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-r border-white/5 min-w-[100px]">
                   Conta
+                </th>
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[60px]">
+                  Level
                 </th>
                 <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[100px]">
                   Power
                 </th>
-                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[80px]">
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[70px]">
                   Praça
                 </th>
-                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[80px]">
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[70px]">
                   Praça ATQ
                 </th>
-                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[80px]">
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[70px]">
                   Pico
                 </th>
-                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[180px]">
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[160px]">
                   Raid
                 </th>
-                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[140px]">
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 min-w-[120px]">
                   Raid Boss
+                </th>
+                <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-red-400 min-w-[60px]">
+                  Ações
                 </th>
               </tr>
             </thead>
@@ -180,6 +194,18 @@ export default function AccountInfoPage() {
                       </div>
                     </td>
 
+                    {/* Level */}
+                    <td className="py-1 px-2">
+                      <Input
+                        type="number"
+                        value={info.level || ""}
+                        onChange={(e) => updateAccountInfo(account.id, "level", parseInt(e.target.value) || 0)}
+                        placeholder="0"
+                        className="h-7 text-xs text-center bg-mir-obsidian border-white/10 text-amber-400"
+                        data-testid={`level-${index}`}
+                      />
+                    </td>
+
                     {/* Power */}
                     <td className="py-1 px-2">
                       <div className="relative">
@@ -188,12 +214,12 @@ export default function AccountInfoPage() {
                           value={info.power || ""}
                           onChange={(e) => updateAccountInfo(account.id, "power", parseInt(e.target.value) || 0)}
                           placeholder="0"
-                          className="h-7 text-xs text-center bg-mir-obsidian border-white/10 text-cyan-400 pr-8"
+                          className="h-7 text-xs text-center bg-mir-obsidian border-white/10 text-cyan-400"
                           data-testid={`power-${index}`}
                         />
-                        {info.power >= 100000 && (
+                        {info.power > 0 && (
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-cyan-400/70 pointer-events-none">
-                            {formatPower(info.power)}
+                            {formatNumber(info.power)}
                           </span>
                         )}
                       </div>
@@ -273,6 +299,36 @@ export default function AccountInfoPage() {
                         ))}
                       </select>
                     </td>
+
+                    {/* Delete */}
+                    <td className="py-1 px-2 text-center">
+                      {deleteConfirm === account.id ? (
+                        <div className="flex gap-1 justify-center">
+                          <button
+                            onClick={() => handleDeleteAccount(account.id)}
+                            className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[10px] text-white"
+                            data-testid={`confirm-delete-${index}`}
+                          >
+                            Sim
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(null)}
+                            className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] text-white"
+                          >
+                            Não
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirm(account.id)}
+                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                          title="Deletar conta"
+                          data-testid={`delete-btn-${index}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -300,15 +356,15 @@ export default function AccountInfoPage() {
               <div className="space-y-0.5 text-slate-300">
                 <div className="flex justify-between">
                   <span>9F:</span>
-                  <span className="text-cyan-400">140k</span>
+                  <span className="text-cyan-400">140.000</span>
                 </div>
                 <div className="flex justify-between">
                   <span>10F:</span>
-                  <span className="text-cyan-400">208k</span>
+                  <span className="text-cyan-400">208.000</span>
                 </div>
                 <div className="flex justify-between">
                   <span>11F:</span>
-                  <span className="text-cyan-400">270k</span>
+                  <span className="text-cyan-400">270.000</span>
                 </div>
               </div>
             </div>
@@ -319,15 +375,15 @@ export default function AccountInfoPage() {
               <div className="space-y-0.5 text-slate-300">
                 <div className="flex justify-between">
                   <span>9F:</span>
-                  <span className="text-purple-400">146k</span>
+                  <span className="text-purple-400">146.000</span>
                 </div>
                 <div className="flex justify-between">
                   <span>10F:</span>
-                  <span className="text-purple-400">214k</span>
+                  <span className="text-purple-400">214.000</span>
                 </div>
                 <div className="flex justify-between">
                   <span>11F:</span>
-                  <span className="text-purple-400">275k</span>
+                  <span className="text-purple-400">275.000</span>
                 </div>
               </div>
             </div>
