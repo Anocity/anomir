@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Trash2, CheckCircle2, Circle, Trophy } from "lucide-react";
-import { Button } from "./ui/button";
+import { CheckCircle2, Circle } from "lucide-react";
 import { Input } from "./ui/input";
 
-export default function EditableTable({ accounts, bossPrices, onUpdate, onConfirm, onDelete, onRefresh }) {
-  const navigate = useNavigate();
+export default function EditableTable({ accounts, bossPrices, onUpdate, onToggleConfirm, onRefresh }) {
   const [editingCell, setEditingCell] = useState(null);
   const [tempValue, setTempValue] = useState("");
 
@@ -211,9 +208,7 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onConfir
             <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">Praça</th>
             <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400">Cracha</th>
             <th className="py-2 px-3 text-right text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Gold</th>
-            <th className="py-2 px-2 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Lend</th>
             <th className="py-2 px-3 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Conf</th>
-            <th className="py-2 px-3 text-center text-[10px] uppercase tracking-wider font-secondary text-slate-400 border-l border-white/5">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -244,41 +239,15 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onConfir
               <td className="py-1 px-2 text-center font-mono">{renderCell(account, "special_bosses.praca_4f", account.special_bosses.praca_4f)}</td>
               <td className="py-1 px-2 text-center font-mono">{renderCell(account, "special_bosses.cracha_epica", account.special_bosses.cracha_epica)}</td>
               <td className="py-1 px-3 font-mono border-l border-white/5">{renderCell(account, "gold", account.gold)}</td>
-              <td className="py-1 px-2 text-center border-l border-white/5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/account/${account.id}/resources`)}
-                  className="h-7 w-7 p-0 text-mir-gold hover:text-amber-300 hover:bg-white/5"
-                  data-testid={`legendary-btn-${index}`}
-                  title="Objetivos Lendários"
-                >
-                  <Trophy className="w-4 h-4" />
-                </Button>
-              </td>
               <td className="py-1 px-3 text-center border-l border-white/5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onConfirm(account.id)}
-                  disabled={account.confirmed}
-                  className={`h-7 w-7 p-0 ${account.confirmed ? 'text-green-500' : 'text-slate-400 hover:text-green-500'} hover:bg-white/5`}
+                <button
+                  onClick={() => onToggleConfirm(account.id, account.confirmed)}
+                  className={`h-7 w-7 p-0 flex items-center justify-center rounded transition-colors ${account.confirmed ? 'text-green-500 hover:text-green-400' : 'text-slate-400 hover:text-green-500'} hover:bg-white/5`}
                   data-testid={`confirm-account-btn-${index}`}
-                  title={account.confirmed ? "Confirmado" : "Confirmar contagem"}
+                  title={account.confirmed ? "Desativar confirmação" : "Ativar confirmação"}
                 >
                   {account.confirmed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                </Button>
-              </td>
-              <td className="py-1 px-3 text-center border-l border-white/5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(account.id)}
-                  className="h-7 w-7 p-0 text-mir-red hover:text-red-400 hover:bg-white/5"
-                  data-testid={`delete-account-btn-${index}`}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                </button>
               </td>
             </tr>
           ))}
@@ -302,7 +271,6 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onConfir
               <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.praca_4f}</td>
               <td className="py-2 px-2 text-center font-mono text-xs text-white">{totals.cracha_epica}</td>
               <td className="py-2 px-3 text-right font-mono text-xs text-mir-blue border-l border-white/5">{totals.gold.toLocaleString('pt-BR')}</td>
-              <td className="py-2 px-2 border-l border-white/5"></td>
               <td className="py-2 px-3 border-l border-white/5"></td>
               <td className="py-2 px-3 border-l border-white/5"></td>
             </tr>
@@ -326,8 +294,6 @@ export default function EditableTable({ accounts, bossPrices, onUpdate, onConfir
               <td className="py-2 px-2 text-center font-mono text-[10px] text-green-400 border-l border-white/5">${usdTotals.xama.toFixed(2)}</td>
               <td className="py-2 px-2 text-center font-mono text-[10px] text-green-400">${usdTotals.praca_4f.toFixed(2)}</td>
               <td className="py-2 px-2 text-center font-mono text-[10px] text-green-400">${usdTotals.cracha_epica.toFixed(2)}</td>
-              <td className="py-2 px-3 border-l border-white/5"></td>
-              <td className="py-2 px-2 border-l border-white/5"></td>
               <td className="py-2 px-3 border-l border-white/5"></td>
               <td className="py-2 px-3 border-l border-white/5"></td>
             </tr>
