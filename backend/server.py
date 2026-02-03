@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import uuid
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
@@ -160,8 +160,8 @@ class Account(BaseModel):
     special_bosses: SpecialBosses
     materials: AccountMaterials = Field(default_factory=AccountMaterials)
     craft_resources: CraftResources = Field(default_factory=CraftResources)
-    craft_item: Optional[str] = None  # Item de criação selecionado
-    account_info: AccountInfo = Field(default_factory=AccountInfo)  # Info adicional
+    craft_items: List[str] = Field(default_factory=list)  # Itens de criação que a conta possui (multi-select)
+    account_info: AccountInfo = Field(default_factory=AccountInfo)
     gold: float = Field(default=0, ge=0)
     confirmed: bool = False
     confirmed_at: Optional[str] = None
@@ -174,6 +174,7 @@ class AccountCreate(BaseModel):
     special_bosses: SpecialBosses
     materials: AccountMaterials = Field(default_factory=AccountMaterials)
     craft_resources: CraftResources = Field(default_factory=CraftResources)
+    craft_items: List[str] = Field(default_factory=list)
     account_info: AccountInfo = Field(default_factory=AccountInfo)
     gold: float = Field(default=0, ge=0)
 
@@ -184,7 +185,7 @@ class AccountUpdate(BaseModel):
     special_bosses: Optional[SpecialBosses] = None
     materials: Optional[AccountMaterials] = None
     craft_resources: Optional[CraftResources] = None
-    craft_item: Optional[str] = None
+    craft_items: Optional[List[str]] = None
     account_info: Optional[AccountInfo] = None
     gold: Optional[float] = Field(default=None, ge=0)
     confirmed: Optional[bool] = None
