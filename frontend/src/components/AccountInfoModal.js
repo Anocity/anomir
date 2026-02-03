@@ -108,11 +108,15 @@ export default function AccountInfoModal({ open, onClose, accounts, onAccountUpd
                     </td>
                     <td className="py-1 px-1">
                       <Input
-                        type="number"
-                        value={info.power || ""}
-                        onChange={(e) => updateAccountInfo(account.id, "power", parseInt(e.target.value) || 0)}
+                        type="text"
+                        value={info.power ? info.power.toLocaleString('pt-BR') : ""}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                          updateAccountInfo(account.id, "power", parseInt(rawValue) || 0);
+                        }}
                         placeholder="0"
                         className="h-6 text-[11px] text-center bg-mir-obsidian border-white/10 text-cyan-400 px-1"
+                        data-testid={`power-input-${account.id}`}
                       />
                     </td>
                     <td className="py-1 px-1">
