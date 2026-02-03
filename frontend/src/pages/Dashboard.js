@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Plus, Settings, FileText } from "lucide-react";
+import { Plus, Settings, FileText, DollarSign, Coins } from "lucide-react";
 import { Button } from "../components/ui/button";
 import EditableTable from "../components/EditableTable";
 import BossPriceDialog from "../components/BossPriceDialog";
@@ -38,6 +38,39 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Calcula totais (Boss + Gold) de todas as contas
+  const totals = useMemo(() => {
+    if (!bossPrices || accounts.length === 0) return { bossValue: 0, goldValue: 0, totalGold: 0 };
+    
+    let bossValue = 0;
+    let totalGold = 0;
+    
+    accounts.forEach(acc => {
+      const bosses = acc.bosses || {};
+      const special = acc.special_bosses || {};
+      
+      bossValue += (bosses.medio2 || 0) * (bossPrices.medio2_price || 0);
+      bossValue += (bosses.grande2 || 0) * (bossPrices.grande2_price || 0);
+      bossValue += (bosses.medio4 || 0) * (bossPrices.medio4_price || 0);
+      bossValue += (bosses.grande4 || 0) * (bossPrices.grande4_price || 0);
+      bossValue += (bosses.medio6 || 0) * (bossPrices.medio6_price || 0);
+      bossValue += (bosses.grande6 || 0) * (bossPrices.grande6_price || 0);
+      bossValue += (bosses.medio7 || 0) * (bossPrices.medio7_price || 0);
+      bossValue += (bosses.grande7 || 0) * (bossPrices.grande7_price || 0);
+      bossValue += (bosses.medio8 || 0) * (bossPrices.medio8_price || 0);
+      bossValue += (bosses.grande8 || 0) * (bossPrices.grande8_price || 0);
+      bossValue += (special.xama || 0) * (bossPrices.xama_price || 0);
+      bossValue += (special.praca_4f || 0) * (bossPrices.praca_4f_price || 0);
+      bossValue += (special.cracha_epica || 0) * (bossPrices.cracha_epica_price || 0);
+      
+      totalGold += acc.gold || 0;
+    });
+    
+    const goldValue = totalGold * (bossPrices.gold_price || 0);
+    
+    return { bossValue, goldValue, totalGold };
+  }, [accounts, bossPrices]);
 
   const handleAddAccount = async () => {
     try {
@@ -87,7 +120,6 @@ export default function Dashboard() {
   const handleUpdateAccount = async (accountId, field, value) => {
     try {
       await axios.put(`${API}/accounts/${accountId}`, { [field]: value });
-      // Atualiza apenas o estado local sem recarregar
       setAccounts(prev => prev.map(acc => {
         if (acc.id === accountId) {
           if (field.includes('.')) {
@@ -107,8 +139,7 @@ export default function Dashboard() {
   const handleConfirmAccount = async (accountId) => {
     try {
       await axios.post(`${API}/accounts/${accountId}/confirm`);
-      toast.success("Contagem confirmada! Resetará em 30 dias.");
-      // Atualiza apenas o estado local
+      toast.success("Contagem confirmada!");
       setAccounts(prev => prev.map(acc => 
         acc.id === accountId ? { ...acc, confirmed: true, confirmed_at: new Date().toISOString() } : acc
       ));
@@ -118,15 +149,16 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteAccount = async (accountId) => {
+  const handleToggleConfirm = async (accountId, currentValue) => {
     try {
-      await axios.delete(`${API}/accounts/${accountId}`);
-      toast.success("Conta deletada!");
-      // Remove do estado local sem recarregar
-      setAccounts(prev => prev.filter(acc => acc.id !== accountId));
+      const newValue = !currentValue;
+      await axios.put(`${API}/accounts/${accountId}`, { confirmed: newValue });
+      setAccounts(prev => prev.map(acc => 
+        acc.id === accountId ? { ...acc, confirmed: newValue } : acc
+      ));
     } catch (error) {
-      console.error("Erro ao deletar conta:", error);
-      toast.error("Erro ao deletar conta");
+      console.error("Erro ao alternar confirmação:", error);
+      toast.error("Erro ao alternar confirmação");
     }
   };
 
@@ -135,7 +167,6 @@ export default function Dashboard() {
       await axios.put(`${API}/boss-prices`, priceData);
       toast.success("Preços atualizados com sucesso!");
       setShowPriceDialog(false);
-      // Atualiza apenas o estado local
       setBossPrices(priceData);
     } catch (error) {
       console.error("Erro ao atualizar preços:", error);
@@ -165,6 +196,29 @@ export default function Dashboard() {
                 Gerencie suas contas e bosses
               </p>
             </div>
+            
+            {/* Totais Card */}
+            <div className="flex gap-3 mr-4">
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="w-4 h-4 text-green-400" />
+                  <span className="text-[10px] text-green-400 uppercase">Boss Total</span>
+                </div>
+                <div className="text-lg font-bold text-green-400" data-testid="total-boss-value">
+                  ${totals.bossValue.toFixed(2)}
+                </div>
+              </div>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-amber-400" />
+                  <span className="text-[10px] text-amber-400 uppercase">Gold Total</span>
+                </div>
+                <div className="text-lg font-bold text-amber-400" data-testid="total-gold-value">
+                  {totals.totalGold.toLocaleString('pt-BR')} <span className="text-xs font-normal">(${totals.goldValue.toFixed(2)})</span>
+                </div>
+              </div>
+            </div>
+            
             <div className="flex gap-2">
               <Button
                 onClick={handleAddAccount}
@@ -184,13 +238,23 @@ export default function Dashboard() {
                 Info Contas
               </Button>
               <Button
+                onClick={() => navigate("/account/" + (accounts[0]?.id || "") + "/resources")}
+                variant="outline"
+                className="bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 text-sm px-3 py-2"
+                data-testid="resources-btn"
+                disabled={accounts.length === 0}
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                Recursos
+              </Button>
+              <Button
                 onClick={() => setShowPriceDialog(true)}
                 variant="outline"
                 className="bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/20 text-sm px-3 py-2"
                 data-testid="config-prices-btn"
               >
                 <Settings className="w-4 h-4 mr-1" />
-                Preços USD
+                Preços
               </Button>
             </div>
           </div>
@@ -202,8 +266,7 @@ export default function Dashboard() {
             accounts={accounts}
             bossPrices={bossPrices}
             onUpdate={handleUpdateAccount}
-            onConfirm={handleConfirmAccount}
-            onDelete={handleDeleteAccount}
+            onToggleConfirm={handleToggleConfirm}
             onRefresh={fetchData}
           />
         </div>
